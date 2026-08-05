@@ -1,61 +1,64 @@
 import { NextResponse } from "next/server";
 
-const SERPAPI_BASE = "https://serpapi.com/search.json";
-
-type Empresa = {
-  nome: string;
-  href: string;
-  endereco?: string;
-  telefone?: string;
-  site?: string;
-  avaliacao?: string;
-};
+const SERPAPI_BASE = "https://serpapi.com";
 
 export async function POST(request: Request) {
-  const body = await request.json();
-
-  const { browser } = await abrirGoogleMaps();
-
-  const empresas = new Map<
-    string,
-    {
-      nome: string;
-      href: string;
-    }
-  >();
-
   try {
-    for (const nicho of body.nichos as string[]) {
-      const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+    const body = await request.json();
+    const { local, nichos } = body as { local: string; nichos: string[] };
 
-      try {
-        const center = await pesquisarNicho(page, nicho, body.local);
+    if (!local?.trim() || !Array.isArray(nichos) || nichos.length === 0) {
+      return NextResponse.json(
+        { erro: "Informe um bairro e pelo menos um subnicho." },
+        { status: 400 }
+      );
+    }
 
-        const resultado = await capturarEmpresas(page, center);
+    // Cole a sua chave da SerpApi entre as aspas abaixo:
+    const apiKey = "SUA_CHAVE_AQUI"; 
 
-        for (const empresa of resultado) {
-          empresas.set(empresa.href, empresa);
-        }
-      } finally {
-        await page.close();
+    const empresas: any[] = [];
+
+    for (const nicho of nichos) {
+      const query = `${nicho} ${local}`;
+      const url = new URL(SERPAPI_BASE);
+      url.searchParams.set("engine", "google_maps");
+      url.searchParams.set("q", query);
+      url.searchParams.set("api_key", apiKey);
+      url.searchParams.set("google_domain", "google.com.br");
+      url.searchParams.set("hl", "pt-BR");
+      url.searchParams.set("gl", "br");
+
+      const resposta = await fetch(url.toString());
+      if (!resposta.ok) {
+        throw new Error(`Erro na SerpApi: ${resposta.status}`);
+      }
+
+      const data = await resposta.json();
+      const results = data?.local_results || data?.map_results || [];
+      
+      for (const item of results) {
+        empresas.push({
+          nome: item.title || item.name || "Sem nome",
+          href: item.link || item.place_link || "#",
+          endereco: item.address || "Sem endereco",
+          telefone: item.phone || "Sem telefone",
+          site: item.website || "",
+          avaliacao: item.rating?.toString() || "0",
+        });
       }
     }
 
     return NextResponse.json({
-      quantidade: empresas.size,
-      empresas: Array.from(empresas.values()),
+      quantidade: empresas.length,
+      empresas,
     });
   } catch (error) {
     return NextResponse.json(
       {
-        erro: error instanceof Error ? `Erro ao realizar a pesquisa: ${error.message}` : "Erro ao realizar a pesquisa.",
+        erro: error instanceof Error ? error.message : "Erro interno no servidor.",
       },
       { status: 500 }
     );
-  } finally {
-    try {
-      await browser.close();
-    } catch {
-    }
   }
 }
