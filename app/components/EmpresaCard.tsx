@@ -11,6 +11,15 @@ interface Empresa {
   cardapio?: string;
 }
 
+// Função auxiliar para garantir que o link abra fora do seu site
+function formatarUrl(url?: string): string {
+  if (!url) return "#";
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    return url;
+  }
+  return `https://${url}`;
+}
+
 export function EmpresaCard({ empresa }: { empresa: Empresa }) {
   const temSite = Boolean(empresa.site);
   const temCardapio = Boolean(empresa.cardapio);
@@ -19,7 +28,13 @@ export function EmpresaCard({ empresa }: { empresa: Empresa }) {
   const temHorario = Boolean(empresa.horario);
   const temAvaliacao = Boolean(empresa.avaliacao);
 
-  // Calcula itens faltantes (quanto mais faltar, maior a oportunidade)
+  // Links corrigidos com a função formatarUrl
+  const linkGoogleMaps = formatarUrl(empresa.href);
+  const linkSite = formatarUrl(empresa.site);
+  const linkInstagram = formatarUrl(empresa.instagram);
+  const linkCardapio = formatarUrl(empresa.cardapio);
+
+  // Calcula itens faltantes
   const pendencias = [
     !temSite && "Sem Site",
     !temCardapio && "Sem Cardápio/Catálogo",
@@ -52,10 +67,11 @@ export function EmpresaCard({ empresa }: { empresa: Empresa }) {
           {empresa.endereco && <p className="text-xs text-slate-400 mt-1">📍 {empresa.endereco}</p>}
         </div>
 
+        {/* Botão com o link formatado para o Google Maps */}
         <a
-          href={empresa.href}
+          href={linkGoogleMaps}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg bg-sky-500/10 px-3 py-2 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-all"
         >
           Ver no Google Maps ↗
@@ -64,9 +80,9 @@ export function EmpresaCard({ empresa }: { empresa: Empresa }) {
 
       {/* Grid de Auditoria Rápida */}
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <ItemStatus rotulo="Site Próprio" ativo={temSite} valor={empresa.site} />
-        <ItemStatus rotulo="Cardápio/Catálogo" ativo={temCardapio} valor={empresa.cardapio} />
-        <ItemStatus rotulo="Instagram" ativo={temInstagram} valor={empresa.instagram} />
+        <ItemStatus rotulo="Site Próprio" ativo={temSite} valor={empresa.site} link={linkSite} />
+        <ItemStatus rotulo="Cardápio/Catálogo" ativo={temCardapio} valor={empresa.cardapio} link={linkCardapio} />
+        <ItemStatus rotulo="Instagram" ativo={temInstagram} valor={empresa.instagram} link={linkInstagram} />
         <ItemStatus rotulo="Telefone" ativo={temTelefone} valor={empresa.telefone} />
         <ItemStatus rotulo="Horário" ativo={temHorario} valor={empresa.horario} />
         <ItemStatus rotulo="Avaliações" ativo={temAvaliacao} valor={empresa.avaliacao ? `★ ${empresa.avaliacao}` : null} />
@@ -89,17 +105,40 @@ export function EmpresaCard({ empresa }: { empresa: Empresa }) {
   );
 }
 
-function ItemStatus({ rotulo, ativo, valor }: { rotulo: string; ativo: boolean; valor?: string | null }) {
+function ItemStatus({
+  rotulo,
+  ativo,
+  valor,
+  link,
+}: {
+  rotulo: string;
+  ativo: boolean;
+  valor?: string | null;
+  link?: string;
+}) {
   return (
-    <div className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-medium ${
-      ativo ? "border-slate-800 bg-slate-950/40 text-slate-400" : "border-rose-500/20 bg-rose-500/10 text-rose-300"
-    }`}>
+    <div
+      className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-medium ${
+        ativo ? "border-slate-800 bg-slate-950/40 text-slate-400" : "border-rose-500/20 bg-rose-500/10 text-rose-300"
+      }`}
+    >
       <span>{ativo ? "✅" : "❌"}</span>
       <div className="truncate">
         <p className="text-[10px] uppercase text-slate-500">{rotulo}</p>
-        <p className="truncate font-semibold text-slate-200">
-          {ativo ? valor || "Cadastrado" : "FALTANDO"}
-        </p>
+        {ativo && link && link !== "#" ? (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="truncate font-semibold text-sky-400 hover:underline block"
+          >
+            {valor || "Acessar"}
+          </a>
+        ) : (
+          <p className="truncate font-semibold text-slate-200">
+            {ativo ? valor || "Cadastrado" : "FALTANDO"}
+          </p>
+        )}
       </div>
     </div>
   );
