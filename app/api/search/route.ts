@@ -14,8 +14,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Cole a sua chave da SerpApi entre as aspas abaixo:
-    const apiKey = "831240dd8c89b9b834a298ca54e99d6cfc5f2429750b1815960c5aa89fa7e7a0"; 
+    // INSIRA SUA CHAVE DA SERPAPI AQUI DENTRO DAS ASPAS:
+    const apiKey = "a"; 
 
     const empresas: any[] = [];
 
@@ -29,19 +29,30 @@ export async function POST(request: Request) {
       url.searchParams.set("hl", "pt-BR");
       url.searchParams.set("gl", "br");
 
-      const resposta = await fetch(url.toString());
-      if (!resposta.ok) {
-        throw new Error(`Erro na SerpApi: ${resposta.status}`);
+      const resposta = await fetch(url.toString(), {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      });
+
+      // Lendo como texto primeiro para evitar o erro de JSON inválido se a SerpApi falhar
+      const textoResposta = await resposta.text();
+
+      if (!resposta.ok || textoResposta.trim().startsWith("<")) {
+        return NextResponse.json(
+          { erro: `A API externa retornou uma mensagem inválida ou erro HTML. Verifique se a sua chave secreta da SerpApi está totalmente correta e ativa.` },
+          { status: 500 }
+        );
       }
 
-      const data = await resposta.json();
-      const results = data?.local_results || data?.map_results || [];
+      const data = JSON.parse(textoResposta);
+      const results = data?.local_results || data?.map_results || data?.places || [];
       
       for (const item of results) {
         empresas.push({
           nome: item.title || item.name || "Sem nome",
           href: item.link || item.place_link || "#",
-          endereco: item.address || "Sem endereco",
+          endereco: item.address || item.snippet || "Sem endereco",
           telefone: item.phone || "Sem telefone",
           site: item.website || "",
           avaliacao: item.rating?.toString() || "0",
@@ -56,7 +67,7 @@ export async function POST(request: Request) {
   } catch (error) {
     return NextResponse.json(
       {
-        erro: error instanceof Error ? error.message : "Erro interno no servidor.",
+        erro: error instanceof Error ? error.message : "Erro desconhecido no servidor da API.",
       },
       { status: 500 }
     );
