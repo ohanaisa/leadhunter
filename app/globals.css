@@ -41,6 +41,7 @@ body::before {
   z-index: -1;
 }
 
+/* Ocultar barra de rolagem mantendo funcionalidade */
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;
