@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     }
 
     // INSIRA SUA CHAVE DA SERPAPI AQUI DENTRO DAS ASPAS:
-    const apiKey = "a"; 
+    const apiKey = "831240dd8c89b9b834a298ca54e99d6cfc5f2429750b1815960c5aa89fa7e7a0"; 
 
     const empresas: any[] = [];
 
