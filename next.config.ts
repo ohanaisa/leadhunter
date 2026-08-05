@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["playwright-core", "@sparticuz/chromium-min"],
+  /* configurações padrão do seu projeto */
 };
 
 export default nextConfig;
