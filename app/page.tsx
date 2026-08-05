@@ -23,7 +23,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [resultado, setResultado] = useState<any>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [filtroNome, setFiltroNome] = useState("");
+
+  // Filtros de Prospecção
+  const [apenasSemSite, setApenasSemSite] = useState(false);
+  const [apenasSemCardapio, setApenasSemCardapio] = useState(false);
 
   const [historicoLocal, setHistoricoLocal] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
@@ -75,38 +78,54 @@ export default function Home() {
         localStorage.setItem("historicoLocal", JSON.stringify(novoHist));
       }
     } catch {
-      setErro("Erro na conexão.");
+      setErro("Erro na conexão com a API.");
     } finally {
       setIsLoading(false);
     }
   }
 
-  const empresasFiltradas = resultado?.empresas?.filter((e: any) =>
-    e.nome.toLowerCase().includes(filtroNome.toLowerCase())
-  );
+  // Ordena empresas: Coloca as empresas com MAIS PENDÊNCIAS no topo da lista
+  const calcularPontuacaoLead = (e: any) => {
+    let pendencias = 0;
+    if (!e.site) pendencias += 3; // Peso maior para ausência de site
+    if (!e.cardapio) pendencias += 2;
+    if (!e.instagram) pendencias += 1;
+    if (!e.telefone) pendencias += 1;
+    if (!e.horario) pendencias += 1;
+    if (!e.avaliacao) pendencias += 1;
+    return pendencias;
+  };
+
+  const empresasProcessadas = resultado?.empresas
+    ?.slice()
+    ?.sort((a: any, b: any) => calcularPontuacaoLead(b) - calcularPontuacaoLead(a)) // Maior pontuação de pendência vem primeiro
+    ?.filter((e: any) => {
+      if (apenasSemSite && e.site) return false;
+      if (apenasSemCardapio && e.cardapio) return false;
+      return true;
+    });
 
   return (
-    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto">
-      {/* Header Visual Hero */}
-      <header className="text-center py-10 relative">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold uppercase tracking-widest mb-4">
-          🔍 MapsHunter v2.0
+    <main className="min-h-screen py-10 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-slate-100">
+      {/* Header */}
+      <header className="text-center py-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-bold uppercase tracking-widest mb-3">
+          🎯 Hunter Leads • Mapeador de Fragilidades
         </div>
-        <h1 className="text-4xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-sky-400">
-          Prospecção de Leads Locais
+        <h1 className="text-3xl sm:text-5xl font-black text-white">
+          Encontre Clientes Sem Site ou Cardápio
         </h1>
-        <p className="mt-4 text-slate-400 max-w-2xl mx-auto text-base sm:text-lg">
-          Encontre e analise empresas no Google Maps selecionando subnichos estratégicos.
+        <p className="mt-3 text-slate-400 max-w-2xl mx-auto text-sm sm:text-base">
+          Mapeie estabelecimentos com baixa reputação digital no Google Maps e ordene automaticamente os melhores alvos para abordagem comercial.
         </p>
       </header>
 
-      {/* Painel Principal */}
-      <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-2xl p-6 sm:p-10 shadow-2xl">
-        
-        {/* Campo Localização */}
+      {/* Painel de Busca */}
+      <section className="rounded-3xl border border-slate-800 bg-slate-900/60 backdrop-blur-xl p-6 sm:p-8 shadow-2xl">
+        {/* Localização */}
         <div ref={historicoRef} className="relative">
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            📍 Onde você quer buscar?
+          <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
+            1. Bairro ou Região de Prospecção
           </label>
           <input
             type="text"
@@ -114,11 +133,10 @@ export default function Home() {
             onChange={(e) => { setLocal(e.target.value); setMostrarHistorico(true); }}
             onFocus={() => setMostrarHistorico(true)}
             placeholder="Ex: Moema, São Paulo / Centro, Curitiba"
-            className="w-full rounded-2xl border border-slate-700 bg-slate-950/80 px-5 py-4 text-white placeholder-slate-500 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 transition-all"
+            className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-5 py-4 text-white placeholder-slate-500 outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all"
           />
           {mostrarHistorico && historicoLocal.length > 0 && (
             <div className="absolute left-0 right-0 z-30 mt-2 rounded-xl border border-slate-700 bg-slate-950 p-2 shadow-2xl">
-              <p className="px-3 py-1 text-xs text-slate-500 font-semibold">Buscas recentes:</p>
               {historicoLocal.map((item, i) => (
                 <button
                   key={i}
@@ -133,20 +151,11 @@ export default function Home() {
           )}
         </div>
 
-        {/* Categorias & Subnichos */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-white">🏷️ Subnichos ({selecaoSubnichos.length}/3)</h2>
-            {selecaoSubnichos.length > 0 && (
-              <button
-                onClick={() => setSelecaoSubnichos([])}
-                className="text-xs text-rose-400 hover:underline"
-              >
-                Limpar seleção
-              </button>
-            )}
-          </div>
-
+        {/* Categorias */}
+        <div className="mt-6">
+          <label className="block text-xs font-bold uppercase text-slate-400 mb-2">
+            2. Escolha os Subnichos Alvo ({selecaoSubnichos.length}/3)
+          </label>
           <div ref={categoriasRef} className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
             {Object.entries(categorias).map(([categoria, subnichos]) => {
               const aberto = categoriasAbertas[categoria];
@@ -157,24 +166,20 @@ export default function Home() {
                   <button
                     type="button"
                     onClick={() => setCategoriasAbertas({ [categoria]: !aberto })}
-                    className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all text-left ${
+                    className={`w-full flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left text-sm ${
                       selecionadosCount > 0
-                        ? "border-sky-500 bg-sky-500/10 text-white"
-                        : "border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700"
+                        ? "border-rose-500 bg-rose-500/10 text-white font-semibold"
+                        : "border-slate-800 bg-slate-950 text-slate-300 hover:border-slate-700"
                     }`}
                   >
-                    <div>
-                      <p className="font-semibold text-sm">{categoria}</p>
-                      <p className="text-xs text-slate-500">{subnichos.length} opções</p>
-                    </div>
+                    <span>{categoria}</span>
                     {selecionadosCount > 0 && (
-                      <span className="bg-sky-500 text-slate-950 text-xs font-bold px-2 py-0.5 rounded-full">
+                      <span className="bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                         {selecionadosCount}
                       </span>
                     )}
                   </button>
 
-                  {/* Dropdown flotante */}
                   {aberto && (
                     <div className="absolute left-0 right-0 top-full z-20 mt-2 p-3 rounded-2xl border border-slate-700 bg-slate-950 shadow-2xl space-y-1.5 max-h-60 overflow-y-auto scrollbar-none">
                       {subnichos.map((sub) => {
@@ -182,8 +187,8 @@ export default function Home() {
                         return (
                           <label
                             key={sub}
-                            className={`flex items-center gap-2 p-2 rounded-xl text-sm cursor-pointer transition-colors ${
-                              check ? "bg-sky-500/20 text-sky-300" : "hover:bg-slate-900 text-slate-300"
+                            className={`flex items-center gap-2 p-2 rounded-xl text-xs cursor-pointer transition-colors ${
+                              check ? "bg-rose-500/20 text-rose-300 font-semibold" : "hover:bg-slate-900 text-slate-300"
                             }`}
                           >
                             <input
@@ -195,7 +200,7 @@ export default function Home() {
                                   check ? prev.filter((i) => i !== sub) : [...prev, sub]
                                 );
                               }}
-                              className="accent-sky-500 rounded"
+                              className="accent-rose-500 rounded"
                             />
                             <span>{sub}</span>
                           </label>
@@ -209,41 +214,63 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Botão de Ação */}
+        {/* Botão */}
         <button
           onClick={buscar}
           disabled={isLoading}
-          className="mt-8 w-full py-4 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 font-bold text-slate-950 text-base shadow-lg shadow-sky-500/20 hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50"
+          className="mt-8 w-full py-4 rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 font-bold text-white text-base shadow-lg shadow-rose-500/20 hover:brightness-110 active:scale-[0.99] transition-all disabled:opacity-50"
         >
-          {isLoading ? "🔍 Minerando empresas..." : "🚀 Buscar Empresas Agora"}
+          {isLoading ? "🔍 Mapeando oportunidades no Google Maps..." : "🔥 Mapear Leads Faltando Informações"}
         </button>
 
-        {erro && <p className="mt-4 text-center text-sm text-rose-400 font-medium">{erro}</p>}
+        {erro && <p className="mt-4 text-center text-xs text-rose-400 font-medium">{erro}</p>}
       </section>
 
-      {/* Resultados */}
+      {/* Resultados e Filtros de Venda */}
       {resultado && (
-        <section className="mt-12">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <section className="mt-10">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 bg-slate-900/40 p-4 rounded-2xl border border-slate-800">
             <div>
-              <h2 className="text-2xl font-bold text-white">Empresas Encontradas</h2>
-              <p className="text-sm text-slate-400">{empresasFiltradas?.length} resultados disponíveis</p>
+              <h2 className="text-xl font-bold text-white">Leads Encontrados ({empresasProcessadas?.length})</h2>
+              <p className="text-xs text-slate-400">Ordenados automaticamente: os **piores perfis (mais quentes para venda)** no topo.</p>
             </div>
 
-            {/* Input para filtrar resultados já carregados */}
-            <input
-              type="text"
-              placeholder="Filtrar nesta lista..."
-              value={filtroNome}
-              onChange={(e) => setFiltroNome(e.target.value)}
-              className="px-4 py-2 rounded-xl border border-slate-800 bg-slate-900 text-sm text-white outline-none focus:border-sky-500"
-            />
+            {/* Filtros rápidos de oportunidade */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setApenasSemSite(!apenasSemSite)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                  apenasSemSite
+                    ? "bg-rose-500 text-white border-rose-400"
+                    : "bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700"
+                }`}
+              >
+                {apenasSemSite ? "✓ Apenas Sem Site" : "🚫 Mostrar Apenas Sem Site"}
+              </button>
+
+              <button
+                onClick={() => setApenasSemCardapio(!apenasSemCardapio)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all ${
+                  apenasSemCardapio
+                    ? "bg-rose-500 text-white border-rose-400"
+                    : "bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700"
+                }`}
+              >
+                {apenasSemCardapio ? "✓ Apenas Sem Cardápio" : "📋 Mostrar Apenas Sem Cardápio"}
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-4">
-            {empresasFiltradas?.map((empresa: any) => (
-              <EmpresaCard key={empresa.href} empresa={empresa} />
-            ))}
+            {empresasProcessadas?.length > 0 ? (
+              empresasProcessadas.map((empresa: any) => (
+                <EmpresaCard key={empresa.href} empresa={empresa} />
+              ))
+            ) : (
+              <div className="text-center py-12 rounded-2xl border border-slate-800 bg-slate-900/30">
+                <p className="text-slate-400 text-sm">Nenhum lead encontrado com os filtros selecionados.</p>
+              </div>
+            )}
           </div>
         </section>
       )}

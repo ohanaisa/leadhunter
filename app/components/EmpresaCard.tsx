@@ -12,83 +12,94 @@ interface Empresa {
 }
 
 export function EmpresaCard({ empresa }: { empresa: Empresa }) {
+  const temSite = Boolean(empresa.site);
+  const temCardapio = Boolean(empresa.cardapio);
+  const temTelefone = Boolean(empresa.telefone);
+  const temInstagram = Boolean(empresa.instagram);
+  const temHorario = Boolean(empresa.horario);
+  const temAvaliacao = Boolean(empresa.avaliacao);
+
+  // Calcula itens faltantes (quanto mais faltar, maior a oportunidade)
+  const pendencias = [
+    !temSite && "Sem Site",
+    !temCardapio && "Sem Cardápio/Catálogo",
+    !temInstagram && "Sem Instagram",
+    !temTelefone && "Sem Telefone",
+    !temHorario && "Sem Horário",
+    !temAvaliacao && "Sem Avaliações",
+  ].filter(Boolean) as string[];
+
+  // Define a temperatura da oportunidade
+  let badgeColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+  let statusTexto = "🟢 Oportunidade Baixa (Perfil Completo)";
+
+  if (pendencias.length >= 4 || !temSite) {
+    badgeColor = "bg-rose-500/20 text-rose-300 border-rose-500/30";
+    statusTexto = "🔥 LEAD QUENTE (Alta Oportunidade)";
+  } else if (pendencias.length >= 2) {
+    badgeColor = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+    statusTexto = "🟡 Oportunidade Média";
+  }
+
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md transition-all hover:-translate-y-1 hover:border-sky-500/50 hover:bg-slate-900/90 hover:shadow-xl hover:shadow-sky-500/10">
+    <div className="group relative rounded-2xl border border-slate-800 bg-slate-900/80 p-6 transition-all hover:border-slate-700 hover:bg-slate-900">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-xl font-bold text-white group-hover:text-sky-300 transition-colors">
-            {empresa.nome}
-          </h3>
-          {empresa.endereco && (
-            <p className="mt-1 text-sm text-slate-400 flex items-center gap-1">
-              📍 {empresa.endereco}
-            </p>
-          )}
+          <span className={`inline-block rounded-full border px-3 py-1 text-xs font-bold ${badgeColor} mb-2`}>
+            {statusTexto}
+          </span>
+          <h3 className="text-xl font-bold text-white">{empresa.nome}</h3>
+          {empresa.endereco && <p className="text-xs text-slate-400 mt-1">📍 {empresa.endereco}</p>}
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {empresa.avaliacao && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300 border border-amber-500/20">
-              ⭐ {empresa.avaliacao}
-            </span>
-          )}
-          {empresa.horario && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 border border-emerald-500/20">
-              🕒 {empresa.horario}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Contatos Grid */}
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 rounded-xl bg-slate-950/50 p-4 border border-slate-800/60">
-        {empresa.telefone && (
-          <p className="text-sm text-slate-300">
-            📞 <span className="font-semibold text-slate-200">Telefone:</span> {empresa.telefone}
-          </p>
-        )}
-        {empresa.site && (
-          <p className="text-sm text-slate-300 truncate">
-            🌐 <span className="font-semibold text-slate-200">Site:</span>{" "}
-            <a href={empresa.site} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-              {empresa.site}
-            </a>
-          </p>
-        )}
-        {empresa.instagram && (
-          <p className="text-sm text-slate-300 truncate">
-            📸 <span className="font-semibold text-slate-200">Instagram:</span>{" "}
-            <a href={empresa.instagram} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-              {empresa.instagram}
-            </a>
-          </p>
-        )}
-        {empresa.cardapio && (
-          <p className="text-sm text-slate-300 truncate">
-            📋 <span className="font-semibold text-slate-200">Cardápio:</span>{" "}
-            <a href={empresa.cardapio} target="_blank" rel="noreferrer" className="text-sky-400 hover:underline">
-              Ver cardápio
-            </a>
-          </p>
-        )}
-      </div>
-
-      {/* Alerta de itens faltantes */}
-      {empresa.missing && empresa.missing.length > 0 && (
-        <div className="mt-4 flex items-center gap-2 rounded-lg bg-rose-500/10 px-3 py-2 text-xs text-rose-300 border border-rose-500/20">
-          ⚠️ <span><strong>Dados ausentes:</strong> {empresa.missing.join(", ")}</span>
-        </div>
-      )}
-
-      <div className="mt-4 flex justify-end">
         <a
           href={empresa.href}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg bg-sky-500/10 px-3 py-2 text-sky-400 border border-sky-500/20 hover:bg-sky-500/20 transition-all"
         >
-          Abrir no Google Maps ↗
+          Ver no Google Maps ↗
         </a>
+      </div>
+
+      {/* Grid de Auditoria Rápida */}
+      <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <ItemStatus rotulo="Site Próprio" ativo={temSite} valor={empresa.site} />
+        <ItemStatus rotulo="Cardápio/Catálogo" ativo={temCardapio} valor={empresa.cardapio} />
+        <ItemStatus rotulo="Instagram" ativo={temInstagram} valor={empresa.instagram} />
+        <ItemStatus rotulo="Telefone" ativo={temTelefone} valor={empresa.telefone} />
+        <ItemStatus rotulo="Horário" ativo={temHorario} valor={empresa.horario} />
+        <ItemStatus rotulo="Avaliações" ativo={temAvaliacao} valor={empresa.avaliacao ? `★ ${empresa.avaliacao}` : null} />
+      </div>
+
+      {/* Diagnóstico de Abordagem para Venda */}
+      {pendencias.length > 0 && (
+        <div className="mt-4 rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-xs">
+          <p className="font-bold text-rose-300">🎯 O que oferecer nesta abordagem:</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {pendencias.map((item, index) => (
+              <span key={index} className="rounded-md bg-rose-500/10 px-2 py-0.5 text-rose-200 border border-rose-500/20">
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ItemStatus({ rotulo, ativo, valor }: { rotulo: string; ativo: boolean; valor?: string | null }) {
+  return (
+    <div className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-medium ${
+      ativo ? "border-slate-800 bg-slate-950/40 text-slate-400" : "border-rose-500/20 bg-rose-500/10 text-rose-300"
+    }`}>
+      <span>{ativo ? "✅" : "❌"}</span>
+      <div className="truncate">
+        <p className="text-[10px] uppercase text-slate-500">{rotulo}</p>
+        <p className="truncate font-semibold text-slate-200">
+          {ativo ? valor || "Cadastrado" : "FALTANDO"}
+        </p>
       </div>
     </div>
   );
