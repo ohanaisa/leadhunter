@@ -11,13 +11,16 @@ interface Empresa {
   cardapio?: string;
 }
 
-// Função auxiliar para garantir que o link abra fora do seu site
-function formatarUrl(url?: string): string {
-  if (!url) return "#";
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    return url;
+// Trata URLs garantindo que não fiquem vazias e sempre tenham o protocolo https://
+function formatarUrl(url?: string): string | null {
+  if (!url || typeof url !== "string") return null;
+  const limpa = url.trim();
+  if (!limpa || limpa === "#") return null;
+
+  if (limpa.startsWith("http://") || limpa.startsWith("https://")) {
+    return limpa;
   }
-  return `https://${url}`;
+  return `https://${limpa}`;
 }
 
 export function EmpresaCard({ empresa }: { empresa: Empresa }) {
@@ -28,8 +31,8 @@ export function EmpresaCard({ empresa }: { empresa: Empresa }) {
   const temHorario = Boolean(empresa.horario);
   const temAvaliacao = Boolean(empresa.avaliacao);
 
-  // Links corrigidos com a função formatarUrl
-  const linkGoogleMaps = formatarUrl(empresa.href);
+  // Validação segura dos links
+  const linkGoogleMaps = formatarUrl(empresa.href) || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(empresa.nome)}`;
   const linkSite = formatarUrl(empresa.site);
   const linkInstagram = formatarUrl(empresa.instagram);
   const linkCardapio = formatarUrl(empresa.cardapio);
@@ -67,7 +70,7 @@ export function EmpresaCard({ empresa }: { empresa: Empresa }) {
           {empresa.endereco && <p className="text-xs text-slate-400 mt-1">📍 {empresa.endereco}</p>}
         </div>
 
-        {/* Botão com o link formatado para o Google Maps */}
+        {/* Link do Google Maps tratado */}
         <a
           href={linkGoogleMaps}
           target="_blank"
@@ -114,7 +117,7 @@ function ItemStatus({
   rotulo: string;
   ativo: boolean;
   valor?: string | null;
-  link?: string;
+  link?: string | null;
 }) {
   return (
     <div
@@ -125,7 +128,7 @@ function ItemStatus({
       <span>{ativo ? "✅" : "❌"}</span>
       <div className="truncate">
         <p className="text-[10px] uppercase text-slate-500">{rotulo}</p>
-        {ativo && link && link !== "#" ? (
+        {ativo && link ? (
           <a
             href={link}
             target="_blank"
