@@ -9,18 +9,20 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fontsource/inter": "^4.5.14",
+    "@sparticuz/chromium-min": "^149.0.0",
     "axios": "^1.19.0",
     "better-sqlite3": "^13.0.2",
     "exceljs": "^4.4.0",
     "lucide-react": "^1.28.0",
     "next": "16.2.12",
     "playwright": "^1.62.1",
+    "playwright-core": "^1.62.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-hook-form": "^7.83.0",
     "sqlite3": "^6.0.1",
-    "zod": "^4.4.3",
-    "@fontsource/inter": "^4.5.14"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

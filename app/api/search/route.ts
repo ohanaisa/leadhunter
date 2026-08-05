@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { abrirGoogleMaps, pesquisarNicho } from "@/services/playwright";
 import { capturarEmpresas } from "@/services/capturarEmpresas";
 
+export const maxDuration = 30;
+
 export async function POST(request: Request) {
   const body = await request.json();
 

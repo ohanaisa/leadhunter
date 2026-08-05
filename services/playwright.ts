@@ -1,4 +1,5 @@
-import { chromium, Page } from "playwright";
+import { chromium as playwrightChromium, Page } from "playwright-core";
+import chromium from "@sparticuz/chromium-min";
 import { geocode } from "@/services/geocode";
 
 function extrairLocalizacao(endereco: string) {
@@ -28,7 +29,16 @@ function extrairLocalizacao(endereco: string) {
 }
 
 export async function abrirGoogleMaps() {
-  const browser = await chromium.launch({ headless: true });
+  const isProd = process.env.NODE_ENV === "production";
+
+  const browser = await playwrightChromium.launch({
+    args: isProd ? chromium.args : [],
+    executablePath: isProd
+      ? await chromium.executablePath("https://github.com/Sparticuz/chromium/releases/download/v149.0.0/chromium-v149.0.0-pack.x64.tar")
+      : undefined,
+    headless: isProd ? true : false,
+  });
+
   return { browser };
 }
 
