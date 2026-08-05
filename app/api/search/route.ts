@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 
-const SERPAPI_BASE = "https://serpapi.com";
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -14,33 +12,36 @@ export async function POST(request: Request) {
       );
     }
 
-    // INSIRA SUA CHAVE DA SERPAPI AQUI DENTRO DAS ASPAS:
-    const apiKey = "831240dd8c89b9b834a298ca54e99d6cfc5f2429750b1815960c5aa89fa7e7a0"; 
+    // Busca a chave das variáveis de ambiente na Vercel (ou fallback para string local se preferir)
+    const apiKey = process.env.SERPAPI_KEY || "831240dd8c89b9b834a298ca54e99d6cfc5f2429750b1815960c5aa89fa7e7a0"; 
+
+    if (!apiKey || apiKey === "831240dd8c89b9b834a298ca54e99d6cfc5f2429750b1815960c5aa89fa7e7a0") {
+      return NextResponse.json(
+        { erro: "Chave da SerpApi não configurada." },
+        { status: 500 }
+      );
+    }
 
     const empresas: any[] = [];
 
     for (const nicho of nichos) {
-      const query = `${nicho} ${local}`;
-      const url = new URL(SERPAPI_BASE);
-      url.searchParams.set("engine", "google_maps");
-      url.searchParams.set("q", query);
-      url.searchParams.set("api_key", apiKey);
-      url.searchParams.set("google_domain", "google.com.br");
-      url.searchParams.set("hl", "pt-BR");
-      url.searchParams.set("gl", "br");
+      const query = encodeURIComponent(`${nicho} ${local}`);
+      
+      // Endereço correto da SerpApi para Google Maps
+      const urlCompleta = `https://serpapi.com/search.json?engine=google_maps&q=${query}&api_key=${apiKey}&google_domain=google.com.br&hl=pt-BR&gl=br`;
 
-      const resposta = await fetch(url.toString(), {
+      const resposta = await fetch(urlCompleta, {
+        method: "GET",
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         },
       });
 
-      // Lendo como texto primeiro para evitar o erro de JSON inválido se a SerpApi falhar
       const textoResposta = await resposta.text();
 
       if (!resposta.ok || textoResposta.trim().startsWith("<")) {
         return NextResponse.json(
-          { erro: `A API externa retornou uma mensagem inválida ou erro HTML. Verifique se a sua chave secreta da SerpApi está totalmente correta e ativa.` },
+          { erro: `A API externa recusou o acesso (Status ${resposta.status}). Resposta: ${textoResposta.substring(0, 150)}` },
           { status: 500 }
         );
       }
